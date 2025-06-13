@@ -1,0 +1,15 @@
+---
+repos:
+  - repo: https://github.com/dirsigler/pre-commit-golang
+    rev: "v0.1.0"
+    hooks:
+      - id: go-fmt
+      - id: go-imports
+      - id: go-cyclo
+        args: [-over=60]
+      - id: no-go-testing
+      - id: golangci-lint
+      - id: go-critic
+      - id: go-unit-tests
+      - id: go-mod-tidy
+      - id: go-vulncheck

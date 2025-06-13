@@ -1,0 +1,174 @@
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+# vim: set ts=2 sw=2 tw=0 fo=cnqoj
+
+version: 2
+
+project_name: configcat-exporter
+
+env:
+  - GO111MODULE=on
+  - CGO_ENABLED=0
+  - COSIGN_YES=true
+
+before:
+  hooks:
+    - go mod download
+
+source:
+  enabled: true
+
+gomod:
+  proxy: false
+
+builds:
+  - id: configcat-exporter
+    main: ./cmd/exporter
+    binary: configcat-exporter
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    mod_timestamp: "{{ .CommitTimestamp }}"
+    no_unique_dist_dir: true
+    dir: .
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+      - -X main.version={{ .Version }}
+      - -X main.commit={{ .Commit }}
+      - -X main.date={{ .Date }}
+      - -X main.builtBy=goreleaser
+      - -X main.goos={{ .Os }}
+      - -X main.goarch={{ .Arch }}
+      - -X main.goarm={{ .Arm }}
+      - -X 'main.buildInfo={{ .Os }}/{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
+
+archives:
+  - formats: ["tar.gz"]
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+
+checksum:
+  name_template: "checksums.txt"
+  algorithm: sha256
+
+signs:
+  - cmd: cosign
+    signature: "${artifact}.sig"
+    certificate: "${artifact}.pem"
+    args:
+      [
+        "sign-blob",
+        "--output-signature",
+        "${artifact}.sig",
+        "--output-certificate",
+        "${artifact}.pem",
+        "${artifact}",
+      ]
+    artifacts: checksum
+
+snapshot:
+  version_template: SNAPSHOT-{{ .ShortCommit }}
+
+sboms:
+  - artifacts: archive
+  - id: source
+    artifacts: source
+  - artifacts: binary
+    id: binary
+
+changelog:
+  use: github-native
+
+dockers:
+  - image_templates:
+      - "ghcr.io/dirsigler/{{ .ProjectName }}:{{ .Version }}-amd64"
+      - "ghcr.io/dirsigler/{{ .ProjectName }}:latest-amd64"
+    dockerfile: Dockerfile
+    use: buildx
+    build_flag_templates:
+      - --platform=linux/amd64
+      - --label=org.opencontainers.image.title={{ .ProjectName }}
+      - --label=org.opencontainers.image.description={{ .ProjectName }}
+      - --label=org.opencontainers.image.url=https://github.com/dirsigler/{{ .ProjectName }}
+      - --label=org.opencontainers.image.source=https://github.com/dirsigler/{{ .ProjectName }}
+      - --label=org.opencontainers.image.version={{ .Version }}
+      - --label=org.opencontainers.image.created={{ time "2006-01-02T15:04:05Z07:00" }}
+      - --label=org.opencontainers.image.revision={{ .FullCommit }}
+      - --label=org.opencontainers.image.licenses=Apache-2.0
+    goarch: amd64
+    goos: linux
+  - image_templates:
+      - "ghcr.io/dirsigler/{{ .ProjectName }}:{{ .Version }}-arm64"
+      - "ghcr.io/dirsigler/{{ .ProjectName }}:latest-arm64"
+    dockerfile: Dockerfile
+    use: buildx
+    build_flag_templates:
+      - --platform=linux/arm64
+      - --label=org.opencontainers.image.title={{ .ProjectName }}
+      - --label=org.opencontainers.image.description={{ .ProjectName }}
+      - --label=org.opencontainers.image.url=https://github.com/dirsigler/{{ .ProjectName }}
+      - --label=org.opencontainers.image.source=https://github.com/dirsigler/{{ .ProjectName }}
+      - --label=org.opencontainers.image.version={{ .Version }}
+      - --label=org.opencontainers.image.created={{ time "2006-01-02T15:04:05Z07:00" }}
+      - --label=org.opencontainers.image.revision={{ .FullCommit }}
+      - --label=org.opencontainers.image.licenses=Apache-2.0
+    goarch: arm64
+    goos: linux
+
+docker_signs:
+  - cmd: cosign
+    artifacts: images
+    output: true
+    args:
+      - "sign"
+      - "${artifact}@${digest}"
+
+docker_manifests:
+  - name_template: "ghcr.io/dirsigler/{{ .ProjectName }}:{{ .Version }}"
+    image_templates:
+      - "ghcr.io/dirsigler/{{ .ProjectName }}:{{ .Version }}-amd64"
+      - "ghcr.io/dirsigler/{{ .ProjectName }}:{{ .Version }}-arm64"
+  - name_template: "ghcr.io/dirsigler/{{ .ProjectName }}:latest"
+    image_templates:
+      - "ghcr.io/dirsigler/{{ .ProjectName }}:latest-amd64"
+      - "ghcr.io/dirsigler/{{ .ProjectName }}:latest-arm64"
+
+release:
+  github:
+    owner: dirsigler
+    name: configcat-exporter
+  draft: false
+  prerelease: auto
+  mode: replace
+  header: |
+    ## Release {{ .Tag }} ({{ .Date }})
+
+    Welcome to this new release!
+  footer: |
+    ## Docker Images
+
+    Docker images are available at:
+    - `ghcr.io/dirsigler/configcat-exporter:{{ .Tag }}`
+    - `ghcr.io/dirsigler/configcat-exporter:latest`
+
+    ## Verification
+
+    All artifacts are signed with [cosign](https://github.com/sigstore/cosign) and include SBOMs and attestations.
+
+    Verify checksums:
+    ```bash
+    cosign verify-blob --signature checksums.txt.sig --certificate checksums.txt.pem checksums.txt
+    ```
+
+    **Full Changelog**: https://github.com/dirsigler/configcat-exporter/compare/{{ .PreviousTag }}...{{ .Tag }}
