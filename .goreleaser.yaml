@@ -21,11 +21,54 @@ gomod:
   proxy: false
 
 builds:
-  - id: configcat-exporter
+  - id: configcat-exporter-amd64
     main: ./cmd/exporter
     binary: configcat-exporter
     goos:
       - linux
+    goarch:
+      - amd64
+    mod_timestamp: "{{ .CommitTimestamp }}"
+    no_unique_dist_dir: true
+    dir: .
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+      - -X main.version={{ .Version }}
+      - -X main.commit={{ .Commit }}
+      - -X main.date={{ .Date }}
+      - -X main.builtBy=goreleaser
+      - -X main.goos={{ .Os }}
+      - -X main.goarch={{ .Arch }}
+      - -X main.goarm={{ .Arm }}
+      - -X 'main.buildInfo={{ .Os }}/{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
+  - id: configcat-exporter-arm64
+    main: ./cmd/exporter
+    binary: configcat-exporter
+    goos:
+      - linux
+    goarch:
+      - arm64
+    mod_timestamp: "{{ .CommitTimestamp }}"
+    no_unique_dist_dir: true
+    dir: .
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+      - -X main.version={{ .Version }}
+      - -X main.commit={{ .Commit }}
+      - -X main.date={{ .Date }}
+      - -X main.builtBy=goreleaser
+      - -X main.goos={{ .Os }}
+      - -X main.goarch={{ .Arch }}
+      - -X main.goarm={{ .Arm }}
+      - -X 'main.buildInfo={{ .Os }}/{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
+  - id: configcat-exporter-darwin
+    main: ./cmd/exporter
+    binary: configcat-exporter
+    goos:
       - darwin
     goarch:
       - amd64
@@ -106,6 +149,8 @@ dockers:
       - --label=org.opencontainers.image.created={{ time "2006-01-02T15:04:05Z07:00" }}
       - --label=org.opencontainers.image.revision={{ .FullCommit }}
       - --label=org.opencontainers.image.licenses=Apache-2.0
+    ids:
+      - configcat-exporter-amd64
     goarch: amd64
     goos: linux
   - image_templates:
@@ -123,6 +168,8 @@ dockers:
       - --label=org.opencontainers.image.created={{ time "2006-01-02T15:04:05Z07:00" }}
       - --label=org.opencontainers.image.revision={{ .FullCommit }}
       - --label=org.opencontainers.image.licenses=Apache-2.0
+    ids:
+      - configcat-exporter-arm64
     goarch: arm64
     goos: linux
 
