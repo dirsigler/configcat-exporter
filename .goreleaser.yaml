@@ -72,6 +72,8 @@ snapshot:
 
 sboms:
   - artifacts: archive
+  - id: source
+    artifacts: source
 
 changelog:
   use: github-native
