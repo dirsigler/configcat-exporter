@@ -21,61 +21,16 @@ gomod:
   proxy: false
 
 builds:
-  - id: configcat-exporter-amd64
+  - id: configcat-exporter
     main: ./cmd/exporter
     binary: configcat-exporter
     goos:
       - linux
     goarch:
       - amd64
-    mod_timestamp: "{{ .CommitTimestamp }}"
-    no_unique_dist_dir: true
-    dir: .
-    flags:
-      - -trimpath
-    ldflags:
-      - -s -w
-      - -X main.version={{ .Version }}
-      - -X main.commit={{ .Commit }}
-      - -X main.date={{ .Date }}
-      - -X main.builtBy=goreleaser
-      - -X main.goos={{ .Os }}
-      - -X main.goarch={{ .Arch }}
-      - -X main.goarm={{ .Arm }}
-      - -X 'main.buildInfo={{ .Os }}/{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
-  - id: configcat-exporter-arm64
-    main: ./cmd/exporter
-    binary: configcat-exporter
-    goos:
-      - linux
-    goarch:
       - arm64
     mod_timestamp: "{{ .CommitTimestamp }}"
     no_unique_dist_dir: true
-    dir: .
-    flags:
-      - -trimpath
-    ldflags:
-      - -s -w
-      - -X main.version={{ .Version }}
-      - -X main.commit={{ .Commit }}
-      - -X main.date={{ .Date }}
-      - -X main.builtBy=goreleaser
-      - -X main.goos={{ .Os }}
-      - -X main.goarch={{ .Arch }}
-      - -X main.goarm={{ .Arm }}
-      - -X 'main.buildInfo={{ .Os }}/{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
-  - id: configcat-exporter-darwin
-    main: ./cmd/exporter
-    binary: configcat-exporter
-    goos:
-      - darwin
-    goarch:
-      - amd64
-      - arm64
-    mod_timestamp: "{{ .CommitTimestamp }}"
-    no_unique_dist_dir: true
-    dir: .
     flags:
       - -trimpath
     ldflags:
@@ -91,15 +46,7 @@ builds:
 
 archives:
   - formats: ["tar.gz"]
-    name_template: >-
-      {{ .ProjectName }}_
-      {{- title .Os }}_
-      {{- if eq .Arch "amd64" }}x86_64
-      {{- else if eq .Arch "386" }}i386
-      {{- else }}{{ .Arch }}{{ end }}
-    format_overrides:
-      - goos: windows
-        formats: [zip]
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
 
 checksum:
   name_template: "checksums.txt"
@@ -125,10 +72,6 @@ snapshot:
 
 sboms:
   - artifacts: archive
-  - id: source
-    artifacts: source
-  - artifacts: binary
-    id: binary
 
 changelog:
   use: github-native
@@ -136,7 +79,6 @@ changelog:
 dockers:
   - image_templates:
       - "ghcr.io/dirsigler/{{ .ProjectName }}:{{ .Version }}-amd64"
-      - "ghcr.io/dirsigler/{{ .ProjectName }}:latest-amd64"
     dockerfile: Dockerfile
     use: buildx
     build_flag_templates:
@@ -149,13 +91,10 @@ dockers:
       - --label=org.opencontainers.image.created={{ time "2006-01-02T15:04:05Z07:00" }}
       - --label=org.opencontainers.image.revision={{ .FullCommit }}
       - --label=org.opencontainers.image.licenses=Apache-2.0
-    ids:
-      - configcat-exporter-amd64
     goarch: amd64
     goos: linux
   - image_templates:
       - "ghcr.io/dirsigler/{{ .ProjectName }}:{{ .Version }}-arm64"
-      - "ghcr.io/dirsigler/{{ .ProjectName }}:latest-arm64"
     dockerfile: Dockerfile
     use: buildx
     build_flag_templates:
@@ -168,8 +107,6 @@ dockers:
       - --label=org.opencontainers.image.created={{ time "2006-01-02T15:04:05Z07:00" }}
       - --label=org.opencontainers.image.revision={{ .FullCommit }}
       - --label=org.opencontainers.image.licenses=Apache-2.0
-    ids:
-      - configcat-exporter-arm64
     goarch: arm64
     goos: linux
 
@@ -188,8 +125,8 @@ docker_manifests:
       - "ghcr.io/dirsigler/{{ .ProjectName }}:{{ .Version }}-arm64"
   - name_template: "ghcr.io/dirsigler/{{ .ProjectName }}:latest"
     image_templates:
-      - "ghcr.io/dirsigler/{{ .ProjectName }}:latest-amd64"
-      - "ghcr.io/dirsigler/{{ .ProjectName }}:latest-arm64"
+      - "ghcr.io/dirsigler/{{ .ProjectName }}:{{ .Version }}-amd64"
+      - "ghcr.io/dirsigler/{{ .ProjectName }}:{{ .Version }}-arm64"
 
 release:
   github:
