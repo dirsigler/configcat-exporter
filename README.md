@@ -5,8 +5,8 @@
 
 This is an custom Prometheus Exporter for the https://configcat.com featureflag solution.
 
-Allows your business to monitor all featureflags across your Organization, Product and Configs.
-Also includes metrics for Zombie flags (stale featureflags).
+Allows your business to monitor all feature-flags across your Organization, Product and Configs.
+Also includes metrics for Zombie flags (stale feature-flags).
 Improve your software application hygiene and better understand the usage of your [configcat.com](https://configcat.com) setup.
 
 ## ⚙️ Metrics
